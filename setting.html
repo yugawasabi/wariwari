@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>立て替え記録</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h1>立て替え記録を作成</h1>
+  <label>誰が：</label>
+  <select id="payerSelect"></select><br>
+
+  <label>誰の：</label><br>
+  <div id="payeeCheckboxes"></div>
+
+  <label>何を：</label>
+  <input type="text" id="what"><br>
+
+  <label>いくら：</label>
+  <input type="number" id="amount"><br>
+
+  <button onclick="savePayment()">保存</button>
+  <button onclick="location.href='summary.html'">戻る</button>
+
+  <h2>登録済み記録</h2>
+  <ul id="paymentList"></ul>
+
+  <script src="js/all.js"></script>
+</body>
+</html>
