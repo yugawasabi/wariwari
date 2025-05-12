@@ -1,205 +1,241 @@
-// 共通データ保持
-const STORAGE_KEYS = {
-  title: 'split_title',
-  members: 'split_members',
-  payments: 'split_payments'
-};
+const SPLIT_KEY = 'splitRecords';
+let currentSplitId = localStorage.getItem('currentSplitId') || null;
 
-function saveToStorage(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-function getFromStorage(key) {
-  return JSON.parse(localStorage.getItem(key) || '[]');
+// ==== 共通 ====
+function getSplits() {
+  return JSON.parse(localStorage.getItem(SPLIT_KEY) || '{}');
 }
 
-// index.html ロジック
-function addMember() {
-  const name = document.getElementById('memberName').value.trim();
-  if (!name) return;
-  const members = getFromStorage(STORAGE_KEYS.members);
-  members.push(name);
-  saveToStorage(STORAGE_KEYS.members, members);
-  renderMemberList();
-  document.getElementById('memberName').value = '';
+function saveSplits(data) {
+  localStorage.setItem(SPLIT_KEY, JSON.stringify(data));
 }
 
-function renderMemberList() {
-  const list = document.getElementById('memberList');
-  const members = getFromStorage(STORAGE_KEYS.members);
-  list.innerHTML = '';
-  members.forEach((name, i) => {
+function generateId() {
+  return 'split_' + Date.now();
+}
+
+function startNewSplit() {
+  const splits = getSplits();
+  const newId = generateId();
+  splits[newId] = { title: '', members: [], payments: [] };
+  saveSplits(splits);
+  localStorage.setItem('currentSplitId', newId);
+  location.href = 'index.html';
+}
+
+function getCurrentSplit() {
+  const splits = getSplits();
+  return splits[currentSplitId] || null;
+}
+
+function setCurrentSplitField(field, value) {
+  const splits = getSplits();
+  if (!splits[currentSplitId]) return;
+  splits[currentSplitId][field] = value;
+  saveSplits(splits);
+}
+
+function updateCurrentSplit() {
+  const splits = getSplits();
+  const updated = splits[currentSplitId];
+  saveSplits(splits);
+}
+
+// ==== index.html 用 ====
+if (location.pathname.includes('index.html')) {
+  const titleInput = document.getElementById('title');
+  const memberList = document.getElementById('memberList');
+  const memberInput = document.getElementById('memberName');
+
+  const split = getCurrentSplit();
+  if (split) {
+    titleInput.value = split.title || '';
+    split.members.forEach(name => addMemberToUI(name));
+  }
+
+  titleInput?.addEventListener('input', () => {
+    setCurrentSplitField('title', titleInput.value);
+  });
+
+  window.addMember = function () {
+    const name = memberInput.value.trim();
+    if (!name) return;
+    if (!split.members.includes(name)) {
+      split.members.push(name);
+      updateCurrentSplit();
+      addMemberToUI(name);
+    }
+    memberInput.value = '';
+  };
+
+  function addMemberToUI(name) {
     const li = document.createElement('li');
     li.textContent = name + ' ';
-    const btn = document.createElement('button');
-    btn.textContent = '削除';
-    btn.onclick = () => {
-      members.splice(i, 1);
-      saveToStorage(STORAGE_KEYS.members, members);
-      renderMemberList();
+    const del = document.createElement('button');
+    del.textContent = '削除';
+    del.onclick = () => {
+      split.members = split.members.filter(m => m !== name);
+      updateCurrentSplit();
+      li.remove();
     };
-    li.appendChild(btn);
-    list.appendChild(li);
-  });
+    li.appendChild(del);
+    memberList.appendChild(li);
+  }
+
+  window.createSplit = function () {
+    if (!split.title || split.members.length === 0) {
+      alert('タイトルとメンバーを入力してください');
+      return;
+    }
+    updateCurrentSplit();
+    location.href = 'setting.html';
+  };
 }
 
-function createSplit() {
-  const title = document.getElementById('title').value.trim();
-  if (!title) return alert('タイトルを入力してください');
-  saveToStorage(STORAGE_KEYS.title, title);
-  location.href = 'setting.html';
-}
-
-// setting.html ロジック
-function populateSettingPage() {
-  const members = getFromStorage(STORAGE_KEYS.members);
+// ==== setting.html 用 ====
+if (location.pathname.includes('setting.html')) {
   const payerSelect = document.getElementById('payerSelect');
-  const payeeCheckboxes = document.getElementById('payeeCheckboxes');
+  const payeeBox = document.getElementById('payeeCheckboxes');
   const paymentList = document.getElementById('paymentList');
-  if (!payerSelect) return;
+  const split = getCurrentSplit();
 
-  payerSelect.innerHTML = '';
-  payeeCheckboxes.innerHTML = '';
+  function renderForm() {
+    split.members.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      payerSelect.appendChild(opt);
 
-  members.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    payerSelect.appendChild(opt);
+      const label = document.createElement('label');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = name;
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(name));
+      payeeBox.appendChild(label);
+    });
 
-    const label = document.createElement('label');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.value = name;
-    label.appendChild(checkbox);
-    label.append(name);
-    payeeCheckboxes.appendChild(label);
-    payeeCheckboxes.appendChild(document.createElement('br'));
-  });
+    renderPayments();
+  }
 
-  const payments = getFromStorage(STORAGE_KEYS.payments);
-  if (paymentList) {
+  window.savePayment = function () {
+    const who = payerSelect.value;
+    const whom = [...payeeBox.querySelectorAll('input:checked')].map(cb => cb.value);
+    const what = document.getElementById('what').value;
+    const howmuch = parseInt(document.getElementById('amount').value, 10);
+
+    if (!who || whom.length === 0 || !what || isNaN(howmuch)) {
+      alert('全項目を正しく入力してください');
+      return;
+    }
+
+    split.payments.push({ who, whom, what, howmuch });
+    updateCurrentSplit();
+    location.reload();
+  };
+
+  function renderPayments() {
     paymentList.innerHTML = '';
-    payments.forEach((p, idx) => {
+    split.payments.forEach((p, i) => {
       const li = document.createElement('li');
-      li.innerHTML = `${p.split_what} (${p.split_paywho}が立替) - ${p.split_howmuch}円 
-        <button onclick="editPayment(${idx})">編集</button>
-        <button onclick="deletePayment(${idx})">削除</button>`;
+      li.textContent = `${p.what}（${p.who}が立て替え）：${p.howmuch}円`;
+
+      const del = document.createElement('button');
+      del.textContent = '削除';
+      del.onclick = () => {
+        split.payments.splice(i, 1);
+        updateCurrentSplit();
+        renderPayments();
+      };
+      li.appendChild(del);
       paymentList.appendChild(li);
     });
   }
+
+  renderForm();
 }
 
-function savePayment() {
-  const payer = document.getElementById('payerSelect').value;
-  const payeeElems = document.querySelectorAll('#payeeCheckboxes input:checked');
-  const what = document.getElementById('what').value.trim();
-  const amount = parseFloat(document.getElementById('amount').value);
+// ==== summary.html 用 ====
+if (location.pathname.includes('summary.html')) {
+  const split = getCurrentSplit();
+  const records = document.getElementById('paymentRecords');
+  const settlement = document.getElementById('settlement');
 
-  if (!payer || payeeElems.length === 0 || !what || !amount) {
-    alert('すべての項目を入力してください');
-    return;
+  function renderPayments() {
+    records.innerHTML = '';
+    split.payments.forEach(p => {
+      const div = document.createElement('div');
+      div.textContent = `${p.what}（${p.who}が立て替え）：${p.howmuch}円`;
+      records.appendChild(div);
+    });
   }
 
-  const payees = Array.from(payeeElems).map(cb => cb.value);
-  const payments = getFromStorage(STORAGE_KEYS.payments);
+  function renderSettlement() {
+    const balances = {};
+    split.members.forEach(name => balances[name] = 0);
 
-  payments.push({
-    split_paywho: payer,
-    split_whopayed: payees,
-    split_what: what,
-    split_howmuch: amount
-  });
-  saveToStorage(STORAGE_KEYS.payments, payments);
-  alert('保存しました');
-  location.href = 'summary.html';
+    split.payments.forEach(p => {
+      const amountPerPerson = p.howmuch / p.whom.length;
+      p.whom.forEach(name => balances[name] -= amountPerPerson);
+      balances[p.who] += p.howmuch;
+    });
+
+    const creditors = Object.entries(balances).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    const debtors = Object.entries(balances).filter(([, v]) => v < 0).sort((a, b) => a[1] - b[1]);
+
+    settlement.innerHTML = '';
+    let i = 0, j = 0;
+
+    while (i < debtors.length && j < creditors.length) {
+      const [debtor, debt] = debtors[i];
+      const [creditor, credit] = creditors[j];
+      const amount = Math.min(-debt, credit);
+
+      const p = document.createElement('p');
+      p.textContent = `${debtor} ⇒ ${creditor} ${amount.toFixed(0)}円`;
+      settlement.appendChild(p);
+
+      debtors[i][1] += amount;
+      creditors[j][1] -= amount;
+
+      if (Math.abs(debtors[i][1]) < 1) i++;
+      if (Math.abs(creditors[j][1]) < 1) j++;
+    }
+  }
+
+  renderPayments();
+  renderSettlement();
 }
 
-function deletePayment(index) {
-  const payments = getFromStorage(STORAGE_KEYS.payments);
-  payments.splice(index, 1);
-  saveToStorage(STORAGE_KEYS.payments, payments);
-  populateSettingPage();
-}
+// ==== アーカイブ表示（全ページ） ====
+const carousel = document.getElementById('splitCarousel');
+const archive = document.getElementById('splitArchive');
 
-function editPayment(index) {
-  // 簡易版：削除→入力欄に反映して再保存
-  const payments = getFromStorage(STORAGE_KEYS.payments);
-  const p = payments[index];
-  document.getElementById('payerSelect').value = p.split_paywho;
-  document.getElementById('what').value = p.split_what;
-  document.getElementById('amount').value = p.split_howmuch;
+function renderArchive() {
+  const splits = getSplits();
+  if (!carousel && !archive) return;
 
-  document.querySelectorAll('#payeeCheckboxes input').forEach(cb => {
-    cb.checked = p.split_whopayed.includes(cb.value);
-  });
-
-  deletePayment(index);
-}
-
-// summary.html ロジック
-function displaySummary() {
-  const title = localStorage.getItem(STORAGE_KEYS.title);
-  const recordsDiv = document.getElementById('paymentRecords');
-  const settlementDiv = document.getElementById('settlement');
-  const payments = getFromStorage(STORAGE_KEYS.payments);
-  const members = getFromStorage(STORAGE_KEYS.members);
-
-  if (!recordsDiv || !settlementDiv) return;
-
-  const totalPaid = {};
-  const totalShouldPay = {};
-
-  recordsDiv.innerHTML = `<h2>${title}</h2>`;
-
-  payments.forEach(payment => {
-    const { split_paywho, split_whopayed, split_what, split_howmuch } = payment;
-    const perPerson = split_howmuch / split_whopayed.length;
-
-    recordsDiv.innerHTML += `<p>${split_what}（${split_paywho}が立て替え）：${split_howmuch.toLocaleString()}円</p>`;
-
-    totalPaid[split_paywho] = (totalPaid[split_paywho] || 0) + split_howmuch;
-    split_whopayed.forEach(p => {
-      totalShouldPay[p] = (totalShouldPay[p] || 0) + perPerson;
+  [carousel, archive].forEach(container => {
+    if (!container) return;
+    container.innerHTML = '';
+    Object.entries(splits).forEach(([id, split]) => {
+      const div = document.createElement('div');
+      div.className = 'carousel-item';
+      div.innerHTML = `${split.title}<button onclick="deleteSplit('${id}')">×</button>`;
+      div.onclick = () => {
+        localStorage.setItem('currentSplitId', id);
+        location.href = 'summary.html';
+      };
+      container.appendChild(div);
     });
   });
-
-  const netBalance = {};
-  members.forEach(name => {
-    netBalance[name] = (totalPaid[name] || 0) - (totalShouldPay[name] || 0);
-  });
-
-  // 精算計算：正→もらう側、負→払う側
-  const creditors = [];
-  const debtors = [];
-  for (const person in netBalance) {
-    if (netBalance[person] > 0) creditors.push({ name: person, amount: netBalance[person] });
-    else if (netBalance[person] < 0) debtors.push({ name: person, amount: -netBalance[person] });
-  }
-
-  let resultHTML = '';
-  creditors.sort((a, b) => b.amount - a.amount);
-  debtors.sort((a, b) => b.amount - a.amount);
-
-  while (creditors.length && debtors.length) {
-    const creditor = creditors[0];
-    const debtor = debtors[0];
-    const payment = Math.min(creditor.amount, debtor.amount);
-    resultHTML += `<p>${debtor.name}⇒${creditor.name}　${Math.round(payment).toLocaleString()}円</p>`;
-
-    creditor.amount -= payment;
-    debtor.amount -= payment;
-
-    if (creditor.amount === 0) creditors.shift();
-    if (debtor.amount === 0) debtors.shift();
-  }
-
-  settlementDiv.innerHTML = resultHTML;
 }
 
-// ページロード時の処理振り分け
-window.onload = () => {
-  const pathname = window.location.pathname;
-  if (pathname.includes('index.html')) renderMemberList();
-  if (pathname.includes('setting.html')) populateSettingPage();
-  if (pathname.includes('summary.html')) displaySummary();
-};
+function deleteSplit(id) {
+  const splits = getSplits();
+  delete splits[id];
+  saveSplits(splits);
+  renderArchive();
+}
+
+renderArchive();
