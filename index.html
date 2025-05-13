@@ -2,18 +2,23 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>割り勘タイトル設定</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wariwari</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>割り勘タイトルとメンバー設定</h1>
-  <button onclick="startNewSplit()">＋ 新しい立て替え記録を作成</button>
-  <div id="splitCarousel"></div>
+  <h1>wari</h1>
   <input type="text" id="title" placeholder="割り勘タイトル"><br>
   <input type="text" id="memberName" placeholder="メンバー名">
-  <button onclick="addMember()">追加</button>
+  <button onclick="addMember()">メンバー追加</button>
   <ul id="memberList"></ul>
-  <button onclick="createSplit()">作成</button>
+
+  <div id="archiveSection">
+    <h2>アーカイブ</h2>
+    <div id="splitArchive"></div>
+  </div>
+
+  <div class="footer-button green" onclick="createSplit()">＋ 新しい立て替え記録を作成</div>
   <script src="js/all.js"></script>
 </body>
 </html>
