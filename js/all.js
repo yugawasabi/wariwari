@@ -77,6 +77,7 @@ function createSplit() {
   saveProjects(projects);
   location.href = `summary.html?project=${id}`;
 }
+
 function populateEditForm() {
   const projectId = getCurrentProjectId();
   if (!projectId) return;
@@ -109,7 +110,6 @@ function populateEditForm() {
   const createBtn = document.querySelector(".footer-button.green");
   if (createBtn) createBtn.style.display = "none";
 }
-
 
 // ===== summary.html 機能 =====
 function calculateSettlement(payments, members) {
@@ -153,7 +153,6 @@ function renderSummary() {
   const project = projects[projectId];
   if (!project) return;
 
-  // --- タイトルとメンバー表示用のHTMLを構築 ---
   const summaryHeader = document.getElementById("summaryHeader");
   if (summaryHeader) {
     summaryHeader.innerHTML = `
@@ -164,20 +163,23 @@ function renderSummary() {
     `;
   }
 
-  // --- 立て替え記録一覧 ---
   const paymentRecords = document.getElementById("paymentRecords");
-  paymentRecords.innerHTML = project.payments.map(p =>
-    `<div class="payment-record">
+  paymentRecords.innerHTML = project.payments.map((p, index) =>
+    `<div class="payment-record" onclick="goToEditPayment(${index})">
       <span class="what">${p.split_what}</span>
       <span class="who">（${p.split_paywho}が立て替え）</span>
       <span class="amount">：${p.split_howmuch.toLocaleString()}円</span>
     </div>`
   ).join('');
 
-  // --- 清算結果表示 ---
   const settlementDiv = document.getElementById("settlement");
   const results = calculateSettlement(project.payments, project.members);
   settlementDiv.innerHTML = results.map(r => `<div class="settlement-item">${r}</div>`).join('');
+}
+
+function goToEditPayment(index) {
+  const projectId = getCurrentProjectId();
+  location.href = `setting.html?project=${projectId}&edit=${index}`;
 }
 
 // ===== setting.html 機能 =====
@@ -209,6 +211,21 @@ function populateSettingForm() {
     payeeCheckboxes.appendChild(cb);
     payeeCheckboxes.appendChild(label);
   });
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const editIndex = urlParams.get("edit");
+  if (editIndex !== null) {
+    const payment = project.payments[editIndex];
+    if (payment) {
+      payerSelect.value = payment.split_paywho;
+      document.getElementById("what").value = payment.split_what;
+      document.getElementById("amount").value = payment.split_howmuch;
+      payment.split_whopayed.forEach(p => {
+        const cb = document.getElementById(`cb-${p}`);
+        if (cb) cb.checked = true;
+      });
+    }
+  }
 }
 
 function savePayment() {
@@ -228,12 +245,21 @@ function savePayment() {
     return;
   }
 
-  project.payments.push({
+  const newPayment = {
     split_paywho: payer,
     split_whopayed: who,
     split_what: what,
     split_howmuch: amount
-  });
+  };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const editIndex = urlParams.get("edit");
+
+  if (editIndex !== null) {
+    project.payments[editIndex] = newPayment; // 上書き
+  } else {
+    project.payments.push(newPayment); // 新規追加
+  }
 
   saveProjects(projects);
   location.href = `summary.html?project=${projectId}`;
