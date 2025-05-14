@@ -2,7 +2,7 @@
 body {
   margin: 0;
   padding: env(safe-area-inset);
-  font-family: 'Helvetica Neue', sans-serif;
+  font-family: 'Noto Sans JP', 'Noto Sans', sans-serif;
   background-color: #ffffff;
   color: #333;
   overflow: scroll;
@@ -13,8 +13,19 @@ body {
   box-sizing: border-box;
   padding-bottom: 50px;
 }
+.header {
+  width: 100%;
+  text-align: center;
+  background-color: #1a472a;
+  color: #fff;
+  margin-bottom: 20px;
+}
 
-h1, h2 {
+h1 {
+  color: #fff;
+} 
+
+h2 {
   margin: 1em 0 0.5em;
   color: #1a472a;
   font-size: 1.4em;
