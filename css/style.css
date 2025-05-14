@@ -31,7 +31,12 @@ button, .footer-button {
   cursor: pointer;
   transition: background-color 0.2s;
 }
-
+.add-member-btn {
+  background-color: #145c3a;
+  color: #fff;
+  border-radius: 5px;
+  margin-top: 15px;
+}
 .footer-button {
   position: fixed;
   bottom: 10px;
