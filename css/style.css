@@ -162,9 +162,17 @@ li {
     padding: 0.4em 0.8em;
     float: right;
   }
+  label {
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  #payeeCheckboxes label {
+    margin-bottom: 0;
+    font-weight: 500;
+  }
   input, select {
     font-size: 0.9rem;
-    height: 30px;
+    height: 40px;
     border-radius: 5px;
   }
   #memberList li {
@@ -180,6 +188,7 @@ li {
   flex-direction: column;
   align-items: center;
   gap: 0.5em;
+  margin-bottom: 20px;
   }
 
   #payeeCheckboxes input[type="checkbox"] {
@@ -189,8 +198,8 @@ li {
   #payeeCheckboxes label {
     display: flex;
     align-items: center;
-    width: 90vw;
-    height: 35px;
+    width: 70vw;
+    height: 40px;
     padding: 0 1em;
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -202,7 +211,9 @@ li {
 
   /* チェック状態に応じてスタイル変更（任意） */
   #payeeCheckboxes input[type="checkbox"]:checked + label {
-    background-color: #d0f0d0;
+    background-color: #000;
+    color: #fff;
+    border: none;
     font-weight: bold;
   }
 }

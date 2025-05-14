@@ -77,6 +77,39 @@ function createSplit() {
   saveProjects(projects);
   location.href = `summary.html?project=${id}`;
 }
+function populateEditForm() {
+  const projectId = getCurrentProjectId();
+  if (!projectId) return;
+
+  const projects = loadProjects();
+  const project = projects[projectId];
+  if (!project) return;
+
+  // タイトルをセット
+  document.getElementById("title").value = project.title;
+
+  // メンバーをセット
+  const ul = document.getElementById("memberList");
+  ul.innerHTML = "";
+  project.members.forEach(m => {
+    const li = document.createElement("li");
+    li.textContent = m;
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "×";
+    delBtn.onclick = () => ul.removeChild(li);
+    li.appendChild(delBtn);
+    ul.appendChild(li);
+  });
+
+  // 「保存」ボタン表示
+  const saveBtn = document.getElementById("saveChanges");
+  if (saveBtn) saveBtn.style.display = "block";
+
+  // 「新規作成」ボタン非表示
+  const createBtn = document.querySelector(".footer-button.green");
+  if (createBtn) createBtn.style.display = "none";
+}
+
 
 // ===== summary.html 機能 =====
 function calculateSettlement(payments, members) {
@@ -211,6 +244,7 @@ window.addEventListener("DOMContentLoaded", () => {
   renderArchive();
   if (document.getElementById("paymentRecords")) renderSummary();
   if (document.getElementById("payerSelect")) populateSettingForm();
+  if (document.getElementById("saveChanges")) populateEditForm();
 });
 
 function goToAddPaymentPage() {
@@ -228,5 +262,29 @@ function goBackToSummary() {
     alert("プロジェクトが見つかりません");
     return;
   }
+  location.href = `summary.html?project=${projectId}`;
+}
+
+function saveProjectChanges() {
+  const projectId = getCurrentProjectId();
+  if (!projectId) return;
+
+  const projects = loadProjects();
+  const project = projects[projectId];
+  if (!project) return;
+
+  const newTitle = document.getElementById("title").value.trim();
+  const liElements = document.querySelectorAll("#memberList li");
+  const members = Array.from(liElements).map(li => li.childNodes[0].nodeValue.trim());
+
+  if (members.length === 0) {
+    alert("メンバーを1人以上追加してください");
+    return;
+  }
+
+  project.title = newTitle || "無題";
+  project.members = members;
+
+  saveProjects(projects);
   location.href = `summary.html?project=${projectId}`;
 }
