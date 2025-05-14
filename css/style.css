@@ -32,10 +32,10 @@ button, .footer-button {
   transition: background-color 0.2s;
 }
 .add-member-btn {
-  background-color: #145c3a;
-  color: #fff;
-  border-radius: 5px;
-  margin-top: 15px;
+  background-color: #145c3a !important;
+  color: #fff !important;
+  border-radius: 5px !important;
+  margin-top: 15px !important;
 }
 .footer-button {
   position: fixed;
